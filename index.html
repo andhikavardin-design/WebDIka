@@ -510,7 +510,7 @@
         .welcome-text-container h3 {
             font-size: 1.5rem;
             color: var(--green-color);
-            animation: text-fade-in 1.5s forwards 1s; /* Delay untuk muncul setelah teks utama */
+            animation: text-fade-in 1.5s forwards 1s;
             margin-top: 0.5rem;
         }
 
@@ -548,6 +548,49 @@
             100% {
                 text-shadow: 2px 2px var(--red-color), -2px -2px var(--green-color);
                 transform: translate(0);
+            }
+        }
+
+        /* --- Media Queries untuk Responsif --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+
+            .cyber-security-page {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            .card h3 {
+                font-size: 1.25rem;
+            }
+
+            .user-grid {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            }
+            
+            #user-section h2 {
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -860,14 +903,13 @@
                 loginContainer.style.display = 'none';
                 welcomeSplash.classList.add('active');
 
-                // Durasi animasi sambutan, lalu masuk ke dasbor
                 setTimeout(() => {
                     welcomeSplash.style.opacity = '0';
                     welcomeSplash.style.visibility = 'hidden';
                     transitionToCyberSecurityPage();
                     loadUsers();
                     startDashboardFunctions();
-                }, 4000); // Durasi total animasi 4 detik
+                }, 4000);
             }, 500);
         }
 
